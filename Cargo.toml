@@ -11,3 +11,6 @@ categories = ["command-line-utilities"]
 
 [features]
 integration = []
+
+[dependencies]
+log = "0.4.21"

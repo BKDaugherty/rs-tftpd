@@ -1,5 +1,6 @@
 use crate::{Config, OptionType, ServerSocket, Socket, Worker};
 use crate::{ErrorCode, Packet, TransferOption};
+use log::{debug, info, error};
 use std::cmp::max;
 use std::collections::HashMap;
 use std::error::Error;
@@ -60,13 +61,14 @@ impl Server {
 
     /// Starts listening for connections. Note that this function does not finish running until termination.
     pub fn listen(&mut self) {
+	debug!("Starting listening loop");
         loop {
             let received = if self.single_port {
                 self.socket.recv_from_with_size(self.largest_block_size)
             } else {
                 Socket::recv_from(&self.socket)
             };
-
+	    debug!("Received Packet {:?}", received);
             if let Ok((packet, from)) = received {
                 match packet {
                     Packet::Rrq {
@@ -74,9 +76,9 @@ impl Server {
                         mut options,
                         ..
                     } => {
-                        println!("Sending {filename} to {from}");
+                        info!("Sending {filename} to {from}");
                         if let Err(err) = self.handle_rrq(filename.clone(), &mut options, &from) {
-                            eprintln!("Error while sending file: {err}")
+                            error!("Error while sending file: {err}")
                         }
                     }
                     Packet::Wrq {
@@ -95,14 +97,14 @@ impl Server {
                             )
                             .is_err()
                             {
-                                eprintln!("Could not send error packet");
+                                error!("Could not send error packet");
                             };
-                            eprintln!("Received write request while in read-only mode");
+                            error!("Received write request while in read-only mode");
                             continue;
                         }
-                        println!("Receiving {filename} from {from}");
+                        info!("Receiving {filename} from {from}");
                         if let Err(err) = self.handle_wrq(filename.clone(), &mut options, &from) {
-                            eprintln!("Error while receiving file: {err}")
+                            error!("Error while receiving file: {err}")
                         }
                     }
                     _ => {
@@ -117,9 +119,9 @@ impl Server {
                             )
                             .is_err()
                             {
-                                eprintln!("Could not send error packet");
+                                error!("Could not send error packet");
                             };
-                            eprintln!("Received invalid request");
+                            error!("Received invalid request");
                         }
                     }
                 };
